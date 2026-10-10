@@ -1,48 +1,77 @@
-const orders = [
-  { number: "MIN-2026-000125", customer: "Aisha Khan", amount: "₹8,499", status: "In Production" },
-  { number: "MIN-2026-000126", customer: "Rahul Mehta", amount: "₹6,199", status: "Photo Review" },
-  { number: "MIN-2026-000127", customer: "Sonia Verma", amount: "₹9,899", status: "Shipped" },
-];
+import Link from "next/link";
+import { Download, Plus } from "lucide-react";
+import { Badge, buttonClass, EmptyState, inputClass, PageHeader, SearchBar, secondaryButtonClass, statusTone, Table } from "@/components/admin/ui";
+import { requireAdmin } from "@/lib/admin-auth";
+import { formatCurrency, formatDate, humanize, orderStatuses } from "@/lib/format";
+import { buildOrderFilter } from "@/lib/order-filter";
+import prisma from "@/lib/prisma";
 
-export default function AdminOrdersPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AdminOrdersPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: string }> }) {
+  await requireAdmin();
+  const { q = "", status = "" } = await searchParams;
+
+  const [orders, counts] = await Promise.all([
+    prisma.order.findMany({ where: buildOrderFilter(q, status), include: { customer: true }, orderBy: { createdAt: "desc" }, take: 300 }),
+    prisma.order.groupBy({ by: ["status"], _count: true }),
+  ]);
+  const countFor = (value: string) => counts.find((row) => row.status === value)?._count ?? 0;
+  const total = counts.reduce((sum, row) => sum + row._count, 0);
+  const exportQuery = new URLSearchParams({ ...(q ? { q } : {}), ...(status ? { status } : {}) }).toString();
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-cyan-400">Operations</p>
-          <h1 className="mt-2 text-3xl font-bold text-white">Orders</h1>
-        </div>
-        <button className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-medium text-slate-200">
-          Export CSV
-        </button>
+      <PageHeader
+        eyebrow="Operations"
+        title="Orders"
+        actions={
+          <>
+            <a href={`/api/admin/orders/export${exportQuery ? `?${exportQuery}` : ""}`} className={secondaryButtonClass}><Download className="h-4 w-4" /> Export CSV</a>
+            <Link href="/admin/orders/new" className={buttonClass}><Plus className="h-4 w-4" /> New order</Link>
+          </>
+        }
+      />
+
+      <div className="flex flex-wrap gap-2 text-sm">
+        <Link href="/admin/orders" className={`rounded-full px-3 py-1 ${!status ? "bg-cyan-500 text-slate-950" : "bg-slate-800 text-slate-300 hover:bg-slate-700"}`}>All ({total})</Link>
+        {orderStatuses.filter((value) => countFor(value) > 0).map((value) => (
+          <Link key={value} href={`/admin/orders?status=${value}`} className={`rounded-full px-3 py-1 ${status === value ? "bg-cyan-500 text-slate-950" : "bg-slate-800 text-slate-300 hover:bg-slate-700"}`}>
+            {humanize(value)} ({countFor(value)})
+          </Link>
+        ))}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80">
-        <table className="min-w-full text-left text-sm text-slate-200">
-          <thead className="bg-slate-800 text-slate-300">
-            <tr>
-              <th className="px-5 py-3">Order</th>
-              <th className="px-5 py-3">Customer</th>
-              <th className="px-5 py-3">Amount</th>
-              <th className="px-5 py-3">Status</th>
+      <SearchBar placeholder="Search order #, product, customer" defaultValue={q}>
+        <select name="status" defaultValue={status} className={`${inputClass} w-48`}>
+          <option value="">Any status</option>
+          {orderStatuses.map((value) => <option key={value} value={value}>{humanize(value)}</option>)}
+        </select>
+      </SearchBar>
+
+      {orders.length === 0 ? (
+        <EmptyState title={q || status ? "No orders match these filters" : "No orders yet"} description="Create an order manually, or convert a customer inquiry into an order.">
+          <Link href="/admin/orders/new" className={buttonClass}>New order</Link>
+        </EmptyState>
+      ) : (
+        <Table head={["Order", "Customer", "Product", "Amount", "Status", "Date"]}>
+          {orders.map((order) => (
+            <tr key={order.id} className="hover:bg-slate-800/40">
+              <td className="px-4 py-3">
+                <Link href={`/admin/orders/${order.id}`} className="font-medium text-white hover:text-cyan-300">{order.orderNumber}</Link>
+                {order.priority === "high" && <span className="ml-2"><Badge tone="rose">High priority</Badge></span>}
+              </td>
+              <td className="px-4 py-3">
+                {order.customer ? <Link href={`/admin/customers/${order.customer.id}`} className="hover:text-cyan-300">{order.customer.name}</Link> : <span className="text-slate-500">—</span>}
+              </td>
+              <td className="px-4 py-3 text-slate-300">{order.productName ?? "—"}</td>
+              <td className="px-4 py-3">{formatCurrency(order.finalAmount)}</td>
+              <td className="px-4 py-3"><Badge tone={statusTone(order.status)}>{humanize(order.status)}</Badge></td>
+              <td className="whitespace-nowrap px-4 py-3 text-slate-400">{formatDate(order.createdAt)}</td>
             </tr>
-          </thead>
-          <tbody>
-            {orders.map((order) => (
-              <tr key={order.number} className="border-t border-slate-800">
-                <td className="px-5 py-4 font-medium text-white">{order.number}</td>
-                <td className="px-5 py-4">{order.customer}</td>
-                <td className="px-5 py-4">{order.amount}</td>
-                <td className="px-5 py-4">
-                  <span className="rounded-full bg-cyan-500/10 px-2 py-1 text-xs text-cyan-300">
-                    {order.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </Table>
+      )}
     </div>
   );
 }

@@ -13,6 +13,7 @@ import {
   type ReferenceSubmission,
 } from "@/lib/reference-uploads";
 import { isVerified, normalizeEmail, normalizePhone } from "@/lib/verification";
+import { recordInquiry } from "@/lib/inquiries";
 
 export const runtime = "nodejs";
 
@@ -182,6 +183,17 @@ export async function POST(request: Request) {
     await rm(submissionDirectory, { recursive: true, force: true });
     console.error(`Reference submission ${id} was emailed but could not be stored.`, error);
   }
+
+  // Also log it as an inquiry so it shows up under Inquiries and Customers.
+  await recordInquiry({
+    name,
+    email,
+    phone,
+    subject: `Reference image submission (${uploads.length} image${uploads.length === 1 ? "" : "s"})`,
+    message: description || "No description provided.",
+    source: "REFERENCE_UPLOAD",
+    referenceSubmissionId: id,
+  }).catch((error) => console.error(`Reference submission ${id} could not be recorded as an inquiry.`, error));
 
   return NextResponse.json({ success: true }, { status: 201 });
 }

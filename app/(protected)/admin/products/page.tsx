@@ -1,48 +1,95 @@
-const products = [
-  { name: "Family Miniature", sku: "FAM-1001", price: "₹4,999", status: "Published" },
-  { name: "Couple Portrait", sku: "CPL-2201", price: "₹7,499", status: "Draft" },
-  { name: "Pet Memory", sku: "PET-3302", price: "₹5,999", status: "Published" },
-];
+import Link from "next/link";
+import { Plus } from "lucide-react";
+import { ActionButton } from "@/components/admin/action-form";
+import { Badge, buttonClass, EmptyState, inputClass, PageHeader, SearchBar, Table } from "@/components/admin/ui";
+import { requireAdmin } from "@/lib/admin-auth";
+import { formatCurrency } from "@/lib/format";
+import prisma from "@/lib/prisma";
+import { toggleProductActive } from "./actions";
 
-export default function AdminProductsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AdminProductsPage({ searchParams }: { searchParams: Promise<{ q?: string; category?: string; status?: string }> }) {
+  await requireAdmin();
+  const { q = "", category = "", status = "" } = await searchParams;
+
+  const [products, categories] = await Promise.all([
+    prisma.product.findMany({
+      where: {
+        ...(q ? { OR: [{ name: { contains: q, mode: "insensitive" } }, { sku: { contains: q, mode: "insensitive" } }] } : {}),
+        ...(category ? { categoryId: category } : {}),
+        ...(status ? { active: status === "published" } : {}),
+      },
+      include: { category: true, images: { where: { isPrimary: true }, take: 1 }, _count: { select: { orderItems: true } } },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.category.findMany({ orderBy: { name: "asc" } }),
+  ]);
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-cyan-400">Catalog</p>
-          <h1 className="mt-2 text-3xl font-bold text-white">Products</h1>
-        </div>
-        <button className="rounded-xl bg-cyan-500 px-4 py-2 font-semibold text-slate-950">
-          Create Product
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="Catalog"
+        title="Products"
+        description="Everything listed here appears on the storefront when published."
+        actions={<Link href="/admin/products/new" className={buttonClass}><Plus className="h-4 w-4" /> Create product</Link>}
+      />
 
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80">
-        <table className="min-w-full text-left text-sm text-slate-200">
-          <thead className="bg-slate-800 text-slate-300">
-            <tr>
-              <th className="px-5 py-3">Product</th>
-              <th className="px-5 py-3">SKU</th>
-              <th className="px-5 py-3">Price</th>
-              <th className="px-5 py-3">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((product) => (
-              <tr key={product.sku} className="border-t border-slate-800">
-                <td className="px-5 py-4 font-medium text-white">{product.name}</td>
-                <td className="px-5 py-4 text-slate-300">{product.sku}</td>
-                <td className="px-5 py-4 text-slate-300">{product.price}</td>
-                <td className="px-5 py-4">
-                  <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-xs text-emerald-300">
-                    {product.status}
+      <SearchBar placeholder="Search name or SKU" defaultValue={q}>
+        <select name="category" defaultValue={category} className={`${inputClass} w-44`}>
+          <option value="">All categories</option>
+          {categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+        </select>
+        <select name="status" defaultValue={status} className={`${inputClass} w-36`}>
+          <option value="">Any status</option>
+          <option value="published">Published</option>
+          <option value="hidden">Hidden</option>
+        </select>
+      </SearchBar>
+
+      {products.length === 0 ? (
+        <EmptyState title={q || category || status ? "No products match these filters" : "No products yet"} description="Create your first product to show it on the store.">
+          <Link href="/admin/products/new" className={buttonClass}>Create product</Link>
+        </EmptyState>
+      ) : (
+        <Table head={["Product", "Category", "Price", "Orders", "Status", ""]}>
+          {products.map((product) => (
+            <tr key={product.id}>
+              <td className="px-4 py-3">
+                <Link href={`/admin/products/${product.id}`} className="flex items-center gap-3 font-medium text-white hover:text-cyan-300">
+                  {product.images[0] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={product.images[0].url} alt="" className="h-11 w-11 rounded-lg object-cover" />
+                  ) : (
+                    <span className="h-11 w-11 rounded-lg bg-slate-800" />
+                  )}
+                  <span>
+                    {product.name}
+                    {product.sku && <span className="block text-xs font-normal text-slate-500">{product.sku}</span>}
                   </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                </Link>
+              </td>
+              <td className="px-4 py-3 text-slate-300">{product.category?.name ?? "—"}</td>
+              <td className="px-4 py-3">{formatCurrency(product.basePrice)}</td>
+              <td className="px-4 py-3 text-slate-300">{product._count.orderItems}</td>
+              <td className="px-4 py-3">
+                <div className="flex flex-wrap gap-1">
+                  <Badge tone={product.active ? "green" : "slate"}>{product.active ? "Published" : "Hidden"}</Badge>
+                  {product.featured && <Badge tone="cyan">Featured</Badge>}
+                </div>
+              </td>
+              <td className="px-4 py-3 text-right">
+                <div className="flex justify-end gap-2">
+                  <ActionButton action={toggleProductActive} fields={{ id: product.id }} className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:border-cyan-500">
+                    {product.active ? "Hide" : "Publish"}
+                  </ActionButton>
+                  <Link href={`/admin/products/${product.id}`} className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:border-cyan-500">Edit</Link>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </Table>
+      )}
     </div>
   );
 }

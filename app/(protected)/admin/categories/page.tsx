@@ -1,40 +1,66 @@
-const categories = [
-  { name: "Family", products: 26, active: true },
-  { name: "Couple", products: 18, active: true },
-  { name: "Pets", products: 12, active: false },
-  { name: "Wedding", products: 9, active: true },
-];
+import Link from "next/link";
+import { ActionButton, ActionForm, SubmitButton } from "@/components/admin/action-form";
+import { Badge, Card, Checkbox, EmptyState, Field, inputClass, PageHeader, secondaryButtonClass } from "@/components/admin/ui";
+import { requireAdmin } from "@/lib/admin-auth";
+import prisma from "@/lib/prisma";
+import { deleteCategory, saveCategory } from "./actions";
 
-export default function AdminCategoriesPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AdminCategoriesPage() {
+  await requireAdmin();
+  const categories = await prisma.category.findMany({
+    orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+    include: { _count: { select: { products: true } } },
+  });
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-cyan-400">Catalog</p>
-          <h1 className="mt-2 text-3xl font-bold text-white">Categories</h1>
-        </div>
-        <button className="rounded-xl bg-cyan-500 px-4 py-2 font-semibold text-slate-950">
-          Create Category
-        </button>
-      </div>
+      <PageHeader eyebrow="Catalog" title="Categories" description="Group products on the storefront. Deleting a category keeps its products, uncategorised." />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {categories.map((category) => (
-          <div key={category.name} className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">{category.name}</h2>
-              <span
-                className={`rounded-full px-2 py-1 text-xs ${
-                  category.active ? "bg-emerald-500/10 text-emerald-300" : "bg-slate-700 text-slate-300"
-                }`}
-              >
-                {category.active ? "Active" : "Inactive"}
-              </span>
-            </div>
-            <p className="text-sm text-slate-400">{category.products} products</p>
-          </div>
-        ))}
-      </div>
+      <Card title="Create category">
+        <ActionForm action={saveCategory} resetOnSuccess className="grid gap-4 md:grid-cols-[1fr_1fr_120px_auto] md:items-end">
+          <Field label="Name"><input name="name" required maxLength={80} className={inputClass} placeholder="Wedding" /></Field>
+          <Field label="Description"><input name="description" maxLength={500} className={inputClass} /></Field>
+          <Field label="Order"><input name="displayOrder" type="number" defaultValue={categories.length} className={inputClass} /></Field>
+          <SubmitButton>Create</SubmitButton>
+        </ActionForm>
+      </Card>
+
+      {categories.length === 0 ? (
+        <EmptyState title="No categories yet" description="Create one above, then assign products to it." />
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {categories.map((category) => (
+            <Card key={category.id}>
+              <ActionForm action={saveCategory} className="grid gap-3">
+                <input type="hidden" name="id" value={category.id} />
+                <div className="flex items-center justify-between gap-3">
+                  <Link href={`/admin/products?category=${category.id}`} className="text-sm text-cyan-300 hover:text-cyan-200">
+                    {category._count.products} product{category._count.products === 1 ? "" : "s"}
+                  </Link>
+                  <Badge tone={category.active ? "green" : "slate"}>{category.active ? "Active" : "Hidden"}</Badge>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Name"><input name="name" required maxLength={80} defaultValue={category.name} className={inputClass} /></Field>
+                  <Field label="Slug"><input name="slug" maxLength={80} defaultValue={category.slug} className={inputClass} /></Field>
+                </div>
+                <Field label="Description"><input name="description" maxLength={500} defaultValue={category.description ?? ""} className={inputClass} /></Field>
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div className="flex items-end gap-4">
+                    <Field label="Order"><input name="displayOrder" type="number" defaultValue={category.displayOrder} className={`${inputClass} w-24`} /></Field>
+                    <Checkbox name="active" label="Active" defaultChecked={category.active} />
+                  </div>
+                  <SubmitButton className={secondaryButtonClass}>Save</SubmitButton>
+                </div>
+              </ActionForm>
+              <div className="mt-3 border-t border-slate-800 pt-3 text-right">
+                <ActionButton action={deleteCategory} fields={{ id: category.id }} danger confirmMessage={`Delete “${category.name}”? Its products will become uncategorised.`}>Delete</ActionButton>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

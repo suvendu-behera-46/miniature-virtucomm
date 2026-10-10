@@ -150,6 +150,7 @@ model Product {
   slug               String           @unique
   shortDescription   String?
   fullDescription    String?
+  features           String?
   categoryId         String?
   category           Category?        @relation(fields: [categoryId], references: [id])
   basePrice          Decimal          @db.Decimal(10, 2)
@@ -446,6 +447,9 @@ model ContactInquiry {
   subject     String?
   message     String
   status      String         @default("NEW")
+  source      String         @default("CONTACT_FORM")
+  notes       String?
+  referenceSubmissionId String?
   createdAt   DateTime       @default(now())
 }
 

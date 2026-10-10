@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
+import { getStoreProducts } from "@/lib/storefront";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const featured = await getStoreProducts({ featuredOnly: true, limit: 4 });
   return NextResponse.json({
     hero: {
-      title: "Turn memories into handcrafted 3D miniatures",
-      subtitle: "Custom sculpted keepsakes for families, couples, pets, and special celebrations.",
-      ctaText: "Create yours",
-      ctaLink: "/products",
+      title: "Preserve your story in a handcrafted 3D miniature.",
+      ctaText: "Upload your reference",
+      ctaLink: "/#reference-upload",
     },
-    featuredProducts: [
-      { name: "Family Miniature", slug: "family-miniature", price: "₹4,999" },
-      { name: "Couple Portrait", slug: "couple-portrait", price: "₹7,499" },
-    ],
+    featuredProducts: featured.map(({ name, slug, price }) => ({ name, slug, price })),
   });
 }

@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
+import { getStoreCategories } from "@/lib/storefront";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
-  return NextResponse.json({
-    categories: [
-      { id: "cat_1", name: "Family", slug: "family", active: true },
-      { id: "cat_2", name: "Couple", slug: "couple", active: true },
-      { id: "cat_3", name: "Pets", slug: "pets", active: true },
-    ],
-  });
+  return NextResponse.json({ categories: await getStoreCategories() });
 }

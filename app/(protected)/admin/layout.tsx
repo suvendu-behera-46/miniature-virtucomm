@@ -1,34 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import {
-  BarChart3,
-  Bell,
-  Boxes,
-  CreditCard,
-  LayoutDashboard,
-  LogOut,
-  Package,
-  Settings,
-  ShoppingCart,
-  Users,
-  Image as ImageIcon,
-  Upload,
-} from "lucide-react";
+import { ExternalLink, LogOut } from "lucide-react";
 import { auth, signOut } from "@/auth";
+import { AdminNav } from "@/components/admin/admin-nav";
+import { requireAdmin } from "@/lib/admin-auth";
+import { humanize } from "@/lib/format";
+import prisma from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
-
-const navItems = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
-  { href: "/admin/reference-uploads", label: "Image submissions", icon: Upload },
-  { href: "/admin/customers", label: "Customers", icon: Users },
-  { href: "/admin/products", label: "Products", icon: Package },
-  { href: "/admin/categories", label: "Categories", icon: Boxes },
-  { href: "/admin/pricing", label: "Pricing", icon: CreditCard },
-  { href: "/admin/media", label: "Media Library", icon: ImageIcon },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
-];
 
 export default async function ProtectedAdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -42,35 +21,28 @@ export default async function ProtectedAdminLayout({ children }: { children: Rea
     redirect("/account");
   }
 
+  const admin = await requireAdmin();
+  const newInquiries = await prisma.contactInquiry.count({ where: { status: "NEW" } });
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <div className="flex min-h-screen">
-        <aside className="w-72 border-r border-slate-800 bg-slate-950/90 p-5">
-          <div className="mb-8 flex items-center justify-between px-2">
+        <aside className="sticky top-0 h-screen w-72 shrink-0 overflow-y-auto border-r border-slate-800 bg-slate-950/90 p-5">
+          <div className="mb-6 flex items-center justify-between px-2">
             <div>
               <p className="text-xs uppercase tracking-[0.24em] text-cyan-400">Miniature</p>
               <h1 className="mt-2 text-xl font-bold text-white">Admin Panel</h1>
             </div>
-            <Bell className="h-5 w-5 text-slate-400" />
+            <Link href="/" target="_blank" title="Open storefront" className="text-slate-400 hover:text-cyan-300"><ExternalLink className="h-5 w-5" /></Link>
           </div>
 
-          <nav className="space-y-2">
-            {navItems.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-300 transition hover:bg-slate-900 hover:text-white"
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-              </Link>
-            ))}
-          </nav>
+          <AdminNav newInquiries={newInquiries} />
 
-          <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+          <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Signed in</p>
-            <p className="mt-2 font-medium text-white">{session.user.name || "Admin"}</p>
-            <p className="text-sm text-slate-400">{session.user.email}</p>
+            <p className="mt-2 font-medium text-white">{admin.name}</p>
+            <p className="text-sm text-slate-400">{admin.email}</p>
+            <p className="mt-1 text-xs text-cyan-400">{humanize(admin.role)}</p>
           </div>
 
           <form
@@ -78,7 +50,7 @@ export default async function ProtectedAdminLayout({ children }: { children: Rea
               "use server";
               await signOut({ redirectTo: "/admin/login" });
             }}
-            className="mt-8"
+            className="mt-4"
           >
             <button
               type="submit"
@@ -90,7 +62,7 @@ export default async function ProtectedAdminLayout({ children }: { children: Rea
           </form>
         </aside>
 
-        <main className="flex-1 bg-slate-950 p-6 xl:p-8">
+        <main className="min-w-0 flex-1 bg-slate-950 p-6 xl:p-8">
           <div data-gsap-section className="mx-auto max-w-7xl">{children}</div>
         </main>
       </div>

@@ -20,6 +20,8 @@ export async function loginAdmin(_previousState: AdminLoginState, formData: Form
       email,
       password,
       redirect: false,
+      // Without this, Auth.js redirects back to the Referer, i.e. the login page.
+      redirectTo: "/admin",
     });
   } catch (error) {
     if (error instanceof AuthError && error.type === "CredentialsSignin") {
