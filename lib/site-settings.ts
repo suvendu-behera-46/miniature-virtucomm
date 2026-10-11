@@ -7,7 +7,7 @@ export const siteSettingFields = [
   { key: "tagline", label: "Tagline", defaultValue: "Personalized keepsakes, made to last." },
   { key: "contact_email", label: "Contact email", defaultValue: "hello@miniaturestudio.in" },
   { key: "contact_phone", label: "Contact phone", defaultValue: "+91 98765 43210" },
-  { key: "whatsapp_number", label: "WhatsApp number", defaultValue: "+91 98765 43210" },
+  { key: "whatsapp_number", label: "WhatsApp number", defaultValue: "+91 90780 37535" },
   { key: "address", label: "Studio address", defaultValue: "India-wide delivery available" },
   { key: "shipping_fee", label: "Default shipping fee (₹)", defaultValue: "0" },
   { key: "production_time", label: "Typical production time", defaultValue: "12 to 18 working days" },

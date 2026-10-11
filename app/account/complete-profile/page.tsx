@@ -9,7 +9,8 @@ export default async function CompleteCustomerProfilePage() {
   if (!session?.user) redirect("/account/login");
 
   const user = session.user as typeof session.user & { id?: string; role?: string };
-  if (user.role !== "CUSTOMER") redirect("/admin");
+  // Admin sessions share the same cookie; send them to the customer sign-in instead of the admin panel.
+  if (user.role !== "CUSTOMER") redirect("/account/login");
 
   const customer = await prisma.customer.findUnique({
     where: { id: user.id },

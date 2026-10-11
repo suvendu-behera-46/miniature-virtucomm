@@ -26,17 +26,22 @@ type HomeProduct = { name: string; price: string; image: string | null; slug: st
 type HomeTestimonial = { id: string; name: string; text: string; rating: number };
 type HomeFaq = { q: string; a: string };
 type HomeGalleryItem = { id: string; title: string; image: string };
+type HomeCategory = { slug: string; name: string; image: string; productCount: number };
 
 export function HomeContent({
   featuredProducts,
   galleryItems,
   testimonials,
   faqs,
+  whatsappUrl,
+  categories,
 }: {
   featuredProducts: HomeProduct[];
   galleryItems: HomeGalleryItem[];
   testimonials: HomeTestimonial[];
   faqs: HomeFaq[];
+  whatsappUrl: string | null;
+  categories: HomeCategory[];
 }) {
   return (
     <main className="text-slate-900">
@@ -222,10 +227,47 @@ export function HomeContent({
         <div className="mx-auto mb-8 max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-cyan-700">Start with your image</p>
           <h2 className="mt-3 text-3xl font-bold text-slate-900">Share your 2D photo or 3D reference</h2>
-          <p className="mt-3 text-slate-600">Send us your image and a few details. Our team will review whether it can be made into a miniature before production begins.</p>
+          <p className="mt-3 text-slate-600">Choose how you&apos;d like to reach us: chat on WhatsApp, or upload your images by email. Our team will review whether it can be made into a miniature before production begins.</p>
         </div>
-        <ReferenceUploadForm />
+        <ReferenceUploadForm whatsappUrl={whatsappUrl} />
       </section>
+
+      {categories.length > 0 && (
+      <section data-gsap-section className="mx-auto max-w-7xl px-6 py-16">
+        <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-cyan-700">Shop by category</p>
+            <h2 className="mt-3 text-3xl font-bold text-slate-900">Find the keepsake for your story</h2>
+          </div>
+          <Link href="/products" className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-700 hover:text-cyan-600">
+            View all products <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
+          {categories.map((category, index) => (
+            <motion.div key={category.slug} initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: index * 0.06 }} whileHover={{ y: -6 }}>
+              <Link
+                href={`/products?category=${category.slug}`}
+                className="group relative block aspect-[4/5] overflow-hidden rounded-[1.75rem] bg-slate-200 shadow-md shadow-slate-200/60 sm:aspect-[4/3]"
+              >
+                <img src={category.image} alt="" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-110" />
+                <span className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
+                <span className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-4 text-white sm:p-5">
+                  <span>
+                    <span className="block text-lg font-bold leading-tight sm:text-xl">{category.name}</span>
+                    <span className="mt-1 block text-xs text-slate-200 sm:text-sm">{category.productCount} design{category.productCount === 1 ? "" : "s"}</span>
+                  </span>
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/20 backdrop-blur transition group-hover:bg-cyan-500">
+                    <ArrowRight className="h-4 w-4" />
+                  </span>
+                </span>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+      )}
 
       {featuredProducts.length > 0 && (
       <section data-gsap-section className="mx-auto max-w-7xl px-6 py-16">

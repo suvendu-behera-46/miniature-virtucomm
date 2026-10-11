@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { confirmVerification, verificationErrorResponse } from "@/lib/verification";
+import { confirmEmailVerification, verificationErrorResponse } from "@/lib/verification";
 
 export const runtime = "nodejs";
 
@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    return NextResponse.json(await confirmVerification(body.challenge, body.code));
+    return NextResponse.json(await confirmEmailVerification(body.challenge, body.code));
   } catch (error) {
     return verificationErrorResponse(error, "We could not check that code. Please try again.");
   }

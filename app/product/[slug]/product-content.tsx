@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { ProductImageGallery } from "@/components/product-image-gallery";
 import { StorefrontFooter, StorefrontHeader } from "@/components/storefront-chrome";
@@ -13,10 +14,12 @@ type ProductDetail = {
   description: string | null;
   features: string[];
   productionTime: string | null;
+  category: string | null;
+  categorySlug: string | null;
   images: { src: string; alt: string }[];
 };
 
-export function ProductContent({ product }: { product: ProductDetail }) {
+export function ProductContent({ product, whatsappUrl }: { product: ProductDetail; whatsappUrl: string | null }) {
   const images = product.images;
 
   return (
@@ -35,7 +38,13 @@ export function ProductContent({ product }: { product: ProductDetail }) {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.45, delay: 0.06 }} className="md:sticky md:top-28">
-          <p className="text-sm uppercase tracking-[0.2em] text-cyan-600">Custom miniature</p>
+          {product.categorySlug ? (
+            <Link href={`/products?category=${product.categorySlug}`} className="text-sm uppercase tracking-[0.2em] text-cyan-600 hover:text-cyan-800">
+              {product.category}
+            </Link>
+          ) : (
+            <p className="text-sm uppercase tracking-[0.2em] text-cyan-600">Custom miniature</p>
+          )}
           <h1 className="mt-3 text-3xl font-bold text-slate-950 sm:text-4xl">{product.name}</h1>
           {product.heading && <p className="mt-4 text-lg leading-relaxed text-slate-600">{product.heading}</p>}
 
@@ -66,9 +75,15 @@ export function ProductContent({ product }: { product: ProductDetail }) {
             <Link href="/#reference-upload" className="rounded-full bg-slate-900 px-6 py-3 font-semibold text-white shadow-lg shadow-slate-200">
               Start your order
             </Link>
-            <Link href="/contact" className="rounded-full border border-slate-300 px-6 py-3 font-semibold text-slate-900">
-              Talk to us
-            </Link>
+            {whatsappUrl && <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full bg-green-600 px-6 py-3 font-semibold text-white transition hover:bg-green-700"
+            >
+              <MessageCircle size={18} aria-hidden="true" />
+              Connect on WhatsApp
+            </a>}
           </div>
           </motion.div>
         </div>

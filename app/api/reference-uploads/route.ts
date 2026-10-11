@@ -12,7 +12,7 @@ import {
   getReferenceUploadsDirectory,
   type ReferenceSubmission,
 } from "@/lib/reference-uploads";
-import { isVerified, normalizeEmail, normalizePhone } from "@/lib/verification";
+import { isEmailVerified, normalizeEmail } from "@/lib/verification";
 import { recordInquiry } from "@/lib/inquiries";
 
 export const runtime = "nodejs";
@@ -60,7 +60,6 @@ export async function POST(request: Request) {
 
   const name = readTextField(formData, "name").trim();
   const email = normalizeEmail(readTextField(formData, "email"));
-  const phone = normalizePhone(readTextField(formData, "phone"));
   const description = readTextField(formData, "description").trim();
   const files = formData.getAll("files").filter((value): value is File => value instanceof File && value.size > 0);
 
@@ -70,14 +69,8 @@ export async function POST(request: Request) {
   if (!email) {
     return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
   }
-  if (!phone) {
-    return NextResponse.json({ error: "Enter a valid phone number with country code." }, { status: 400 });
-  }
-  if (!isVerified(readTextField(formData, "emailToken"), "email", email)) {
+  if (!isEmailVerified(readTextField(formData, "emailToken"), email)) {
     return NextResponse.json({ error: "Verify your email address before submitting." }, { status: 400 });
-  }
-  if (!isVerified(readTextField(formData, "phoneToken"), "phone", phone)) {
-    return NextResponse.json({ error: "Verify your phone number before submitting." }, { status: 400 });
   }
   if (description.length > 2000) {
     return NextResponse.json({ error: "Keep your project note under 2,000 characters." }, { status: 400 });
@@ -109,7 +102,6 @@ export async function POST(request: Request) {
     id,
     name,
     email,
-    phone,
     description,
     createdAt: new Date().toISOString(),
     files: uploads.map(({ file }) => {
@@ -139,7 +131,6 @@ export async function POST(request: Request) {
       text: [
         `Name: ${name}`,
         `Email: ${email} (verified)`,
-        `Phone: ${phone} (verified)`,
         `Submitted: ${submission.createdAt}`,
         `Submission ID: ${id}`,
         "",
@@ -188,7 +179,6 @@ export async function POST(request: Request) {
   await recordInquiry({
     name,
     email,
-    phone,
     subject: `Reference image submission (${uploads.length} image${uploads.length === 1 ? "" : "s"})`,
     message: description || "No description provided.",
     source: "REFERENCE_UPLOAD",
@@ -211,7 +201,6 @@ function renderEmailHtml(submission: ReferenceSubmission) {
   const rows: [string, string][] = [
     ["Name", submission.name],
     ["Email", `<a href="mailto:${escapeHtml(submission.email)}">${escapeHtml(submission.email)}</a> ✓ verified`],
-    ["Phone", `<a href="tel:${escapeHtml(submission.phone ?? "")}">${escapeHtml(submission.phone ?? "")}</a> ✓ verified`],
     ["Submitted", new Date(submission.createdAt).toUTCString()],
     ["Images", submission.files.map((file) => escapeHtml(file.originalName)).join("<br>")],
   ];

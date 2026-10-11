@@ -13,6 +13,7 @@ export type StoreProduct = {
   image: string | null;
   tag: string;
   category: string | null;
+  categorySlug: string | null;
   shortDescription: string | null;
 };
 
@@ -25,10 +26,14 @@ function productTag(product: { featured: boolean; popular: boolean; newProduct: 
   return product.category?.name ?? "Custom";
 }
 
-export async function getStoreProducts({ featuredOnly = false, limit }: { featuredOnly?: boolean; limit?: number } = {}): Promise<StoreProduct[]> {
+export async function getStoreProducts({
+  featuredOnly = false,
+  limit,
+  categoryId,
+}: { featuredOnly?: boolean; limit?: number; categoryId?: string } = {}): Promise<StoreProduct[]> {
   const query = (featured: boolean) =>
     prisma.product.findMany({
-      where: { active: true, ...(featured ? { featured: true } : {}) },
+      where: { active: true, ...(featured ? { featured: true } : {}), ...(categoryId ? { categoryId } : {}) },
       include: { category: true, images: { orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }], take: 1 } },
       orderBy: [{ category: { displayOrder: "asc" } }, { createdAt: "asc" }],
       take: limit,
@@ -47,7 +52,8 @@ export async function getStoreProducts({ featuredOnly = false, limit }: { featur
     comparePrice: product.comparePrice ? formatCurrency(product.comparePrice) : null,
     image: product.images[0]?.url ?? placeholderImage,
     tag: productTag(product),
-    category: product.category?.name ?? null,
+    category: product.category?.active ? product.category.name : null,
+    categorySlug: product.category?.active ? product.category.slug : null,
     shortDescription: product.shortDescription,
   }));
 }
@@ -69,7 +75,8 @@ export async function getStoreProduct(slug: string) {
     features: (product.features ?? "").split("\n").map((line) => line.trim()).filter(Boolean),
     productionTime: product.productionTime,
     material: product.material,
-    category: product.category?.name ?? null,
+    category: product.category?.active ? product.category.name : null,
+    categorySlug: product.category?.active ? product.category.slug : null,
     seoTitle: product.seoTitle,
     seoDescription: product.seoDescription,
     images: (product.images.length ? product.images.map((image) => image.url) : [placeholderImage]).map((src, index) => ({
@@ -100,6 +107,31 @@ export async function getGalleryImages({ featuredOnly = false } = {}) {
   return images.map((image) => ({ id: image.id, title: image.title ?? "", caption: image.caption ?? "", image: image.imageUrl }));
 }
 
-export async function getStoreCategories() {
-  return prisma.category.findMany({ where: { active: true }, orderBy: [{ displayOrder: "asc" }, { name: "asc" }], select: { id: true, name: true, slug: true, description: true } });
+export type StoreCategory = { id: string; name: string; slug: string; description: string | null; image: string; productCount: number };
+
+// Active categories that have at least one published product, with a cover
+// image (the category's own, or its first product's main image).
+export async function getStoreCategories(): Promise<StoreCategory[]> {
+  const categories = await prisma.category.findMany({
+    where: { active: true, products: { some: { active: true } } },
+    orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+    include: {
+      _count: { select: { products: { where: { active: true } } } },
+      products: {
+        where: { active: true, images: { some: {} } },
+        take: 1,
+        orderBy: { createdAt: "asc" },
+        select: { images: { orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }], take: 1, select: { url: true } } },
+      },
+    },
+  });
+
+  return categories.map((category) => ({
+    id: category.id,
+    name: category.name,
+    slug: category.slug,
+    description: category.description,
+    image: category.coverImage || category.products[0]?.images[0]?.url || placeholderImage,
+    productCount: category._count.products,
+  }));
 }

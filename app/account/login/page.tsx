@@ -1,15 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import prisma from "@/lib/prisma";
 import { StorefrontHeader, StorefrontFooter } from "@/components/storefront-chrome";
 import { GoogleLoginButton } from "./google-login-button";
 
 export default async function CustomerLoginPage() {
   const session = await auth();
-  if (session?.user) {
-    const role = (session.user as typeof session.user & { role?: string }).role;
-    if (role === "CUSTOMER") redirect("/account");
-    redirect("/admin");
+  const sessionUser = session?.user as (NonNullable<typeof session>["user"] & { id?: string; role?: string }) | undefined;
+  if (sessionUser?.role === "CUSTOMER" && sessionUser.id) {
+    // Only skip the sign-in page if the customer record still exists, to avoid a redirect loop.
+    const customer = await prisma.customer.findUnique({ where: { id: sessionUser.id }, select: { id: true } });
+    if (customer) redirect("/account");
   }
 
   const googleReady = Boolean(
