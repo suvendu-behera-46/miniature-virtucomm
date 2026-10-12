@@ -1,10 +1,17 @@
 generator client {
   provider = "prisma-client-js"
+  // "native" is the build machine; the others cover the Linux variants cPanel
+  // servers run (CloudLinux/AlmaLinux are RHEL-based), so a locally built
+  // bundle also runs on the server.
+  binaryTargets = ["native", "rhel-openssl-1.0.x", "rhel-openssl-1.1.x", "rhel-openssl-3.0.x", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // Neon: DATABASE_URL is the pooled connection used by the app,
+  // DIRECT_URL the direct one used by `prisma db push` / migrations.
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum RoleType {

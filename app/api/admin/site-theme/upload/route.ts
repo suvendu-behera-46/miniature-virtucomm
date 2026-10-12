@@ -1,8 +1,7 @@
-import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { saveImageUpload } from "@/lib/media-storage";
+import prisma from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -49,15 +48,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "One or more files do not match their declared image format." }, { status: 400 });
   }
 
-  const uploadDirectory = path.join(process.cwd(), "public", "uploads", "themes");
-  await mkdir(uploadDirectory, { recursive: true });
-
-  const uploads = await Promise.all(uploadsWithBytes.map(async ({ file, bytes }) => {
-    const extension = allowedTypes[file.type];
-    const filename = `${randomUUID()}${extension}`;
-    await writeFile(path.join(uploadDirectory, filename), bytes, { flag: "wx" });
-    return { src: `/uploads/themes/${filename}`, alt: file.name.slice(0, 160) };
-  }));
+  // Stored with the other media (served from /media) so uploads made after deployment still work.
+  const uploads = [];
+  for (const { file } of uploadsWithBytes) {
+    const media = await saveImageUpload(file);
+    await prisma.mediaAsset.create({
+      data: { url: media.url, storageKey: media.storageKey, filename: media.filename, size: media.size, type: "IMAGE", uploadedBy: session?.user?.email ?? null },
+    });
+    uploads.push({ src: media.url, alt: file.name.slice(0, 160) });
+  }
 
   return NextResponse.json({ uploads }, { status: 201 });
 }

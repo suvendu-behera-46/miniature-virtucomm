@@ -5,8 +5,9 @@ import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 // Uploaded images live outside /public so files added after `next build` are
-// still served (by app/media/[name]/route.ts).
-export const mediaDirectory = path.join(process.cwd(), "storage", "media");
+// still served (by app/media/[name]/route.ts). In production, point
+// MEDIA_STORAGE_DIR outside the app folder so redeploys don't delete uploads.
+export const mediaDirectory = process.env.MEDIA_STORAGE_DIR || path.join(process.cwd(), "storage", "media");
 export const maxMediaFileSize = 12 * 1024 * 1024;
 
 const imageTypes: Record<string, { extension: string; signature: (bytes: Buffer) => boolean }> = {

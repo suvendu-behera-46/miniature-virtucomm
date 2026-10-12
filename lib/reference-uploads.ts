@@ -22,7 +22,8 @@ export type ReferenceSubmission = {
 };
 
 export function getReferenceUploadsDirectory() {
-  return path.join(process.cwd(), "private", "reference-uploads");
+  // Set REFERENCE_UPLOADS_DIR outside the app folder in production so redeploys keep submissions.
+  return process.env.REFERENCE_UPLOADS_DIR || path.join(process.cwd(), "private", "reference-uploads");
 }
 
 export async function listReferenceSubmissions() {

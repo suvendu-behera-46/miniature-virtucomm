@@ -43,3 +43,7 @@ next-env.d.ts
 
 # uploaded media (served by app/media/[name]/route.ts)
 /storage/
+
+# cPanel package (npm run package:cpanel)
+/deploy/
+miniature-cpanel.zip

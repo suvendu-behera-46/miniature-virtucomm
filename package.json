@@ -10,7 +10,9 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "seed": "tsx prisma/seed.ts",
-    "postinstall": "prisma skills sync || exit 0"
+    "postinstall": "prisma skills sync || exit 0",
+    "db:copy": "tsx scripts/copy-database.ts",
+    "package:cpanel": "bash scripts/package-cpanel.sh"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -38,5 +40,8 @@
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=20.9.0"
   }
 }

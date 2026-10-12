@@ -73,7 +73,7 @@ export async function getSeasonalTheme(): Promise<SeasonalTheme> {
 }
 
 export function isAllowedThemeImage(src: string): boolean {
-  return src.startsWith("/uploads/themes/") || /^https:\/\//i.test(src);
+  return src.startsWith("/media/") || src.startsWith("/uploads/themes/") || /^https:\/\//i.test(src);
 }
 
 function validDateString(value: unknown): string {
