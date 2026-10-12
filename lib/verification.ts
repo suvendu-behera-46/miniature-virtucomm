@@ -63,7 +63,7 @@ export async function startEmailVerification(rawEmail: string, clientIp: string)
 
   const nonce = randomUUID();
   const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
-  const appName = process.env.NEXT_PUBLIC_APP_NAME || "Miniature Studio";
+  const appName = process.env.NEXT_PUBLIC_APP_NAME || "Mukti Miniature";
 
   await sendMail({
     to: target,

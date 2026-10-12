@@ -1,7 +1,7 @@
 # Going live: Neon database + cPanel hosting + GoDaddy domain
 
-This guide takes the site from your computer to `https://yourdomain.com`.
-Replace `yourdomain.com` and `CPANEL_USER` with your own values throughout.
+This guide takes the site from your computer to `https://muktiminiature.com`.
+Replace `CPANEL_USER` with your cPanel username throughout.
 
 How the pieces fit:
 
@@ -76,8 +76,8 @@ Skip this if the domain is already connected to this hosting account.
 1. In cPanel, note the server **IP address** (right sidebar → *General Information* → *Shared IP Address*).
 2. In GoDaddy → **My Products → your domain → DNS**:
    - Edit the **A** record with name `@` → value = the cPanel IP.
-   - Make sure there is a **CNAME** record `www` → `@` (or `yourdomain.com`).
-   - (Alternative: change the domain's **nameservers** to the ones your host gives you.)
+   - Make sure there is a **CNAME** record `www` → `@` (or `muktiminiature.com`).
+   - Keep DNS at GoDaddy rather than switching the domain's **nameservers** to your host: the Resend email records (`resend._domainkey`, `send`, `_dmarc`) live in GoDaddy DNS, and switching nameservers would drop them and stop outgoing email.
 3. In cPanel, make sure the domain is listed under **Domains** (as the main domain or an added domain).
 4. DNS changes can take from a few minutes up to 24–48 hours.
 5. Once the domain resolves, open **Security → SSL/TLS Status** and run **AutoSSL** so the site works on `https://`.
@@ -105,7 +105,7 @@ Keeping `miniature-data` outside `miniature-app` means future updates never dele
 | Node.js version | 22.x (or the highest ≥ 20.9) |
 | Application mode | Production |
 | Application root | `miniature-app` |
-| Application URL | `yourdomain.com` |
+| Application URL | `muktiminiature.com` |
 | Application startup file | `server.js` |
 
 Then add these **Environment variables** (button *Add Variable*), one by one:
@@ -115,18 +115,18 @@ Then add these **Environment variables** (button *Add Variable*), one by one:
 | `NODE_ENV` | `production` |
 | `DATABASE_URL` | Neon **pooled** string (step 1) |
 | `DIRECT_URL` | Neon **direct** string (step 1) |
-| `NEXTAUTH_URL` | `https://yourdomain.com` |
+| `NEXTAUTH_URL` | `https://muktiminiature.com` |
 | `AUTH_TRUST_HOST` | `true` |
 | `NEXTAUTH_SECRET` | a new long random value: run `openssl rand -base64 32` on your computer |
 | `AUTH_GOOGLE_ID` | from your Google OAuth client |
 | `AUTH_GOOGLE_SECRET` | from your Google OAuth client |
-| `SMTP_HOST` | `smtp.gmail.com` |
+| `SMTP_HOST` | `smtp.resend.com` |
 | `SMTP_PORT` | `465` |
 | `SMTP_SECURE` | `true` |
-| `SMTP_USER` | `virtucomm@gmail.com` |
-| `SMTP_PASS` | the Gmail **App Password** |
-| `MAIL_FROM` | `Miniature Studio <virtucomm@gmail.com>` |
-| `REFERENCE_UPLOAD_EMAIL_TO` | `virtucomm@gmail.com` |
+| `SMTP_USER` | `resend` |
+| `SMTP_PASS` | your Resend **API key** (`re_…`) |
+| `MAIL_FROM` | `Mukti Miniature <noreply@muktiminiature.com>` |
+| `REFERENCE_UPLOAD_EMAIL_TO` | `muktiminiature@gmail.com` |
 | `MEDIA_STORAGE_DIR` | `/home/CPANEL_USER/miniature-data/media` |
 | `REFERENCE_UPLOADS_DIR` | `/home/CPANEL_USER/miniature-data/reference-uploads` |
 
@@ -140,14 +140,14 @@ Click **Create** (or **Save**), then **Restart**.
 
 Google Cloud Console → **APIs & Services → Credentials** → your OAuth client:
 
-- **Authorized JavaScript origins:** add `https://yourdomain.com` (and `https://www.yourdomain.com` if you use www).
-- **Authorized redirect URIs:** add `https://yourdomain.com/api/auth/callback/google`.
+- **Authorized JavaScript origins:** add `https://muktiminiature.com` (and `https://www.muktiminiature.com` if you use www).
+- **Authorized redirect URIs:** add `https://muktiminiature.com/api/auth/callback/google`.
 - If the OAuth consent screen is in **Testing**, either add test users or click **Publish app** so any customer can sign in.
 
 ## 9. Test the live site
 
-- [ ] `https://yourdomain.com` loads with products, categories, gallery
-- [ ] `https://yourdomain.com/admin/login` → sign in → dashboard shows your data
+- [ ] `https://muktiminiature.com` loads with products, categories, gallery
+- [ ] `https://muktiminiature.com/admin/login` → sign in → dashboard shows your data
 - [ ] **Change the admin password** (Admin → Settings → Change your password); the starting one is `admin123`
 - [ ] Admin → Settings: check business details and the WhatsApp number
 - [ ] Upload an image in Admin → Media library and see it on the page
@@ -180,7 +180,7 @@ Uploaded images and Neon data are untouched by updates.
 | Site shows an error / 503 | `miniature-app/stderr.log` (or the log shown in Setup Node.js App). Check the Node version is ≥ 20.9 and all environment variables are set. Restart after any change. |
 | "Query engine library … could not be found" | The log names the server's platform; add it to `binaryTargets` in `prisma/schema.prisma`, rebuild, and re-upload. |
 | Can't connect to database | Check `DATABASE_URL`/`DIRECT_URL` were copied exactly, including `sslmode=require`. The first request after the database has been idle can take a few seconds while Neon wakes up. |
-| Login goes back to the login page or to localhost | `NEXTAUTH_URL` must be exactly `https://yourdomain.com`, and `AUTH_TRUST_HOST=true` must be set. |
+| Login goes back to the login page or to localhost | `NEXTAUTH_URL` must be exactly `https://muktiminiature.com`, and `AUTH_TRUST_HOST=true` must be set. |
 | Google says `redirect_uri_mismatch` | Step 8: the redirect URI must match exactly, including `https`. |
 | Verification / submission emails don't arrive | Check `SMTP_PASS` is a Gmail App Password. Some shared hosts (including GoDaddy) block outgoing connections to external mail servers; if so, create an email account in cPanel and use its SMTP settings (cPanel → *Email Accounts* → *Connect Devices*), or ask your host to allow SMTP. |
 | Uploaded images don't show | `MEDIA_STORAGE_DIR` must point to an existing folder the app can write to. |

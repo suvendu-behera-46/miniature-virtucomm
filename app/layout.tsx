@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AnimationRuntime } from "@/components/animation-runtime";
 import { SeasonalThemeBackground } from "@/components/seasonal-theme-background";
+import { logoPath } from "@/lib/site-settings";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,6 +18,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Miniature Studio | Custom 3D Keepsakes",
   description: "Create custom 3D miniature family, couple, and pet keepsakes with a database-driven storefront and admin CMS.",
+  icons: { icon: logoPath, apple: logoPath },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

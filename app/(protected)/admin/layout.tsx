@@ -4,6 +4,7 @@ import { ExternalLink, LogOut } from "lucide-react";
 import { auth, signOut } from "@/auth";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { requireAdmin } from "@/lib/admin-auth";
+import { logoPath } from "@/lib/site-settings";
 import { humanize } from "@/lib/format";
 import prisma from "@/lib/prisma";
 
@@ -29,9 +30,13 @@ export default async function ProtectedAdminLayout({ children }: { children: Rea
       <div className="flex min-h-screen">
         <aside className="sticky top-0 h-screen w-72 shrink-0 overflow-y-auto border-r border-slate-800 bg-slate-950/90 p-5">
           <div className="mb-6 flex items-center justify-between px-2">
-            <div>
-              <p className="text-xs uppercase tracking-[0.24em] text-cyan-400">Miniature</p>
-              <h1 className="mt-2 text-xl font-bold text-white">Admin Panel</h1>
+            <div className="flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element -- the logo is swapped at runtime from Settings */}
+              <img src={logoPath} alt="" width={44} height={44} className="h-11 w-11 rounded-full bg-white object-cover" />
+              <div>
+                <p className="text-xs uppercase tracking-[0.24em] text-cyan-400">Mukti Miniature</p>
+                <h1 className="mt-1 text-xl font-bold text-white">Admin Panel</h1>
+              </div>
             </div>
             <Link href="/" target="_blank" title="Open storefront" className="text-slate-400 hover:text-cyan-300"><ExternalLink className="h-5 w-5" /></Link>
           </div>
