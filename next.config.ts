@@ -11,6 +11,12 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: projectRoot,
   // The upload helpers read folders at runtime, which makes Next trace the whole
   // project; keep local-only files and old build output out of the bundle.
+  experimental: {
+    // Admin forms upload photos through Server Actions (1 MB by default) and
+    // through the auth proxy (10 MB by default); phone photos are 2–6 MB each.
+    serverActions: { bodySizeLimit: "50mb" },
+    proxyClientMaxBodySize: "50mb",
+  },
   outputFileTracingExcludes: {
     "*": ["deploy/**", "*.zip", "miniature/**", "storage/**", "private/**", "scripts/**", ".git/**", "*.md", "tsconfig.tsbuildinfo"],
   },

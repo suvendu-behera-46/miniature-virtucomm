@@ -21,7 +21,7 @@ export default async function AdminSettingsPage() {
           <img src={logoUrl} alt="Current logo" className="h-28 w-28 shrink-0 rounded-full bg-white object-cover" />
           <div className="flex-1 space-y-3">
             <ActionForm action={saveLogo} resetOnSuccess className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <Field label="Upload a new logo" hint="Square JPG, PNG, or WebP works best (under 1 MB)." className="flex-1">
+              <Field label="Upload a new logo" hint="Square JPG, PNG, or WebP works best." className="flex-1">
                 <input name="logo" type="file" required accept="image/jpeg,image/png,image/webp" className={`${inputClass} file:mr-3 file:rounded-lg file:border-0 file:bg-slate-800 file:px-3 file:py-1 file:text-slate-200`} />
               </Field>
               <div><SubmitButton>Save logo</SubmitButton></div>

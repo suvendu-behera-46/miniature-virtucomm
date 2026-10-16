@@ -2,19 +2,14 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { compare } from "bcryptjs";
+import { authConfig } from "@/auth.config";
 import prisma from "@/lib/prisma";
 
 const googleClientId = process.env.AUTH_GOOGLE_ID ?? process.env.GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.AUTH_GOOGLE_SECRET ?? process.env.GOOGLE_CLIENT_SECRET;
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
-  session: {
-    strategy: "jwt",
-  },
-  pages: {
-    signIn: "/admin/login",
-  },
+  ...authConfig,
   providers: [
     Credentials({
       name: "Credentials",
@@ -56,6 +51,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       : []),
   ],
   callbacks: {
+    ...authConfig.callbacks,
     async signIn({ user, account }) {
       if (account?.provider !== "google") return true;
 
@@ -72,25 +68,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       user.id = customer.id;
       return true;
-    },
-    async jwt({ token, user }) {
-      if (user) {
-        token.role = (user as typeof user & { role?: string }).role ?? "CUSTOMER";
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      const sessionUser = session.user as typeof session.user & {
-        id?: string;
-        role?: string | null;
-      };
-
-      if (sessionUser) {
-        sessionUser.id = token.sub ?? "";
-        sessionUser.role = (token.role as string | undefined) ?? "ADMIN";
-      }
-
-      return session;
     },
   },
 });
