@@ -1,5 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  // Lets production connect to Neon over HTTPS/WebSockets (see lib/prisma.ts).
+  previewFeatures = ["driverAdapters"]
   // "native" is the build machine; the others cover the Linux variants cPanel
   // servers run (CloudLinux/AlmaLinux are RHEL-based), so a locally built
   // bundle also runs on the server.
